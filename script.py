@@ -132,17 +132,24 @@ def upload_image_to_strapi(image_path):
         return None
 
 def generate_image(prompt, filename):
-    print(f"🎨 YZ görsel üretiliyor: {filename}")
-    safe_prompt = urllib.parse.quote(prompt)
-    url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=800&height=600&nologo=true"
+    print(f"🎨 YZ görsel üretiliyor (Hugging Face): {filename}")
+    API_URL = "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell"
+    HF_TOKEN = os.getenv("HUGGINGFACE_API_KEY", "")
+    
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+    payload = {"inputs": prompt}
+    
     try:
-        response = requests.get(url)
+        response = requests.post(API_URL, headers=headers, json=payload)
         if response.status_code == 200:
             with open(filename, "wb") as f:
                 f.write(response.content)
             return True
-        return False
+        else:
+            print(f"❌ Görsel üretilemedi ({response.status_code}): {response.text}")
+            return False
     except Exception as e:
+        print(f"❌ Görsel hatası: {e}")
         return False
 
 def get_categories():
