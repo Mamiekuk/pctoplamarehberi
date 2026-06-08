@@ -3,6 +3,7 @@ import requests
 import json
 from dotenv import load_dotenv
 import time
+import random
 import urllib.request
 import urllib.parse
 from groq import Groq
@@ -78,14 +79,19 @@ def groq_generate_systems(category_name, count):
     if not groq_client:
         return []
     print(f"🤖 Groq '{category_name}' için {count} adet güncel bilgisayar sistemi tasarlıyor...")
+    
+    themes = ["Uzay ve Galaksi", "Mitolojik Tanrılar", "Siberpunk & Neon", "Yırtıcı Hayvanlar", "Askeri ve Taktiksel", "Otomobil Yarışları", "Samuray ve Ninja", "Doğa ve Elementler", "Karanlık ve Gotik", "Minimalist ve Modern"]
+    selected_theme = random.choice(themes)
+    
     try:
         prompt_instruction = f"""
         You are an expert PC builder. Generate {count} realistic, modern PC builds for the category: "{category_name}".
+        CRITICAL: The naming and aesthetic concept of these PCs MUST be inspired by the theme: '{selected_theme}'.
         Provide the output ONLY as a valid JSON array of objects.
         Each object MUST have the following keys:
-        - name: A cool, descriptive name for the PC (in Turkish, e.g. 'Canavar X', 'Ofis Pro').
-        - hardware_info: Detailed specs (CPU, GPU, RAM, Motherboard, Storage).
-        - details: Write an engaging 2-3 sentence AI commentary evaluating this system's performance, its target audience, and why it is a great choice (in Turkish). NEVER leave this empty or write 'none'.
+        - name: A cool, highly creative, and unique name for the PC based on the theme '{selected_theme}' (in Turkish, e.g. 'Galaktik Fırtına', 'Neon Samuray'). DO NOT use boring generic names like 'Oyun Canavarı' or 'Ofis Pro'.
+        - hardware_info: Detailed specs (CPU, GPU, RAM, Motherboard, Storage). Ensure the hardware matches the tier of the PC.
+        - details: Write an engaging 2-3 sentence AI commentary evaluating this system's performance, its target audience, and why it is a great choice. Tie the commentary slightly into the '{selected_theme}' theme (in Turkish). NEVER leave this empty or write 'none'.
         - price: Realistic price in Turkish Lira (TRY) as an integer number (e.g. 25000).
         
         Example JSON structure:
@@ -121,9 +127,9 @@ def upload_image_to_strapi(image_path):
     upload_url = f"{STRAPI_API_URL}/api/upload"
     try:
         with open(image_path, "rb") as f:
-            files = {"files": f}
+            files = {"files": (image_path, f, "image/jpeg")}
             response = requests.post(upload_url, headers=HEADERS, files=files)
-            if response.status_code == 200:
+            if response.status_code in [200, 201]:
                 data = response.json()
                 return data[0]["id"]
             else:
