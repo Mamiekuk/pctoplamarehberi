@@ -1,0 +1,4 @@
+requests
+streamlit
+deep-translator
+python-dotenv
