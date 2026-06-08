@@ -112,25 +112,41 @@ def create_category(category_data):
         
         if res.status_code in [200, 201]:
             data = res.json()
-            # Strapi v4/v5 compatibility for ID
-            tr_id = data.get("data", {}).get("id") if isinstance(data.get("data"), dict) and "id" in data.get("data") else data.get("id", data.get("data", [{}])[0].get("id") if isinstance(data.get("data"), list) else None)
             
-            if tr_id:
+            # Strapi v5 (documentId) vs Strapi v4 (id) kontrolü
+            tr_document_id = data.get("data", {}).get("documentId")
+            tr_id = data.get("data", {}).get("id") if isinstance(data.get("data"), dict) and "id" in data.get("data") else data.get("id")
+            
+            identifier = tr_document_id if tr_document_id else tr_id
+            
+            if identifier:
                 # EN Çeviri ve Localization
                 en_name = translator.translate(category_data["name"])
                 en_desc = translator.translate(category_data["description"])
                 
-                loc_payload = {
-                    "name": en_name,
-                    "description": en_desc,
-                    "locale": "en"
-                }
-                loc_res = requests.post(f"{STRAPI_API_URL}/api/categories/{tr_id}/localizations", headers=HEADERS, json=loc_payload)
+                # Strapi v5'te localization verisi "data" objesi içine sarılmalıdır
+                if tr_document_id:
+                    loc_payload = {
+                        "data": {
+                            "name": en_name,
+                            "description": en_desc,
+                            "locale": "en"
+                        }
+                    }
+                else:
+                    loc_payload = {
+                        "name": en_name,
+                        "description": en_desc,
+                        "locale": "en"
+                    }
+                
+                loc_res = requests.post(f"{STRAPI_API_URL}/api/categories/{identifier}/localizations", headers=HEADERS, json=loc_payload)
                 if loc_res.status_code in [200, 201]:
-                    print(f"✅ Kategori çok dilli olarak eklendi: {category_data['name']}")
+                    print(f"✅ Kategori çok dilli (tek post) olarak eklendi: {category_data['name']}")
                 else:
                     print(f"⚠️ Kategori TR eklendi ama EN çevirisi eklenemedi: {loc_res.text}")
-                return tr_id
+                
+                return identifier
         else:
             print(f"❌ Kategori eklenirken hata: {res.text}")
             return None
@@ -165,27 +181,44 @@ def create_system(system_data, category_id):
         
         if res.status_code in [200, 201]:
             data = res.json()
-            tr_id = data.get("data", {}).get("id") if isinstance(data.get("data"), dict) and "id" in data.get("data") else data.get("id", data.get("data", [{}])[0].get("id") if isinstance(data.get("data"), list) else None)
             
-            if tr_id:
+            tr_document_id = data.get("data", {}).get("documentId")
+            tr_id = data.get("data", {}).get("id") if isinstance(data.get("data"), dict) and "id" in data.get("data") else data.get("id")
+            
+            identifier = tr_document_id if tr_document_id else tr_id
+            
+            if identifier:
                 # İngilizceye Çevir
                 en_name = system_data["name"]
                 en_hardware = system_data["hardware_info"]
                 en_details = translator.translate(system_data["details"])
                 
-                loc_payload = {
-                    "name": en_name,
-                    "hardware_info": en_hardware,
-                    "details": en_details,
-                    "price": system_data["price"],
-                    "category": category_id,
-                    "image": image_id,
-                    "locale": "en"
-                }
+                if tr_document_id:
+                    loc_payload = {
+                        "data": {
+                            "name": en_name,
+                            "hardware_info": en_hardware,
+                            "details": en_details,
+                            "price": system_data["price"],
+                            "category": category_id,
+                            "image": image_id,
+                            "locale": "en"
+                        }
+                    }
+                else:
+                    loc_payload = {
+                        "name": en_name,
+                        "hardware_info": en_hardware,
+                        "details": en_details,
+                        "price": system_data["price"],
+                        "category": category_id,
+                        "image": image_id,
+                        "locale": "en"
+                    }
                 
-                loc_res = requests.post(f"{STRAPI_API_URL}/api/systems/{tr_id}/localizations", headers=HEADERS, json=loc_payload)
+                loc_res = requests.post(f"{STRAPI_API_URL}/api/systems/{identifier}/localizations", headers=HEADERS, json=loc_payload)
                 if loc_res.status_code in [200, 201]:
-                    print(f"✅ Sistem çok dilli olarak eklendi: {system_data['name']}")
+                    print(f"✅ Sistem çok dilli (tek post) olarak eklendi: {system_data['name']}")
                 else:
                     print(f"⚠️ Sistem TR eklendi ama EN çevirisi eklenemedi: {loc_res.text}")
         else:
@@ -206,9 +239,10 @@ def run():
     
     for cat in existing_categories:
         attrs = cat.get("attributes", cat)
-        name = attrs.get("name")
+        name = attrs.get("name") if attrs else cat.get("name")
         if name:
-            category_map[name] = cat.get("id")
+            # Strapi v5 documentId vs Strapi v4 id
+            category_map[name] = cat.get("documentId", cat.get("id"))
 
     for mock_cat in MOCK_CATEGORIES:
         if mock_cat["name"] not in category_map:
