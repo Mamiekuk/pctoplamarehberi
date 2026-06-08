@@ -85,7 +85,7 @@ def groq_generate_systems(category_name, count):
         Each object MUST have the following keys:
         - name: A cool, descriptive name for the PC (in Turkish, e.g. 'Canavar X', 'Ofis Pro').
         - hardware_info: Detailed specs (CPU, GPU, RAM, Motherboard, Storage).
-        - details: A 1-2 sentence description of what this PC is good for (in Turkish).
+        - details: Write an engaging 2-3 sentence AI commentary evaluating this system's performance, its target audience, and why it is a great choice (in Turkish). NEVER leave this empty or write 'none'.
         - price: Realistic price in Turkish Lira (TRY) as an integer number (e.g. 25000).
         
         Example JSON structure:
