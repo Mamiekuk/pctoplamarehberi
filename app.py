@@ -68,11 +68,11 @@ st.markdown("""
 
 # Dil Seçimi (Sidebar)
 selected_language = st.sidebar.radio("Language / Dil", options=["Türkçe (TR)", "English (EN)"])
-locale = "tr" if "TR" in selected_language else "en"
+locale = "tr-TR" if "TR" in selected_language else "en"
 
 # Çeviri Metinleri
 texts = {
-    "tr": {
+    "tr-TR": {
         "title": "⚡ Yeni Nesil PC Toplama Rehberi",
         "subtitle": "Kullanım amacınıza en uygun, yapay zeka destekli bilgisayar sistemlerini keşfedin.",
         "category_select": "Kategori Seçin",
@@ -128,7 +128,7 @@ if not categories and not systems:
 else:
     st.sidebar.header(t["category_select"])
     
-    cat_options = ["Tümü" if locale == "tr" else "All"]
+    cat_options = ["Tümü" if locale == "tr-TR" else "All"]
     for cat in categories:
         attrs = cat.get("attributes", cat)
         if "name" in attrs:
@@ -154,7 +154,7 @@ else:
                      filtered_systems.append(sys)
 
     if not filtered_systems:
-        st.info("Bu kategoride henüz bir sistem bulunmuyor." if locale == "tr" else "No systems found in this category yet.")
+        st.info("Bu kategoride henüz bir sistem bulunmuyor." if locale == "tr-TR" else "No systems found in this category yet.")
     
     for sys in filtered_systems:
         attrs = sys.get("attributes", sys)
@@ -197,4 +197,7 @@ else:
             st.markdown('</div>', unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
+if st.sidebar.button("🔄 Verileri Yenile / Refresh Data"):
+    st.cache_data.clear()
+    st.rerun()
 st.sidebar.info("🚀 Powered by Streamlit & Strapi & Pollinations AI")
