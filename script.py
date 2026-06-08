@@ -9,7 +9,7 @@ import urllib.parse
 # .env dosyasını yükle
 load_dotenv()
 
-STRAPI_API_URL = os.getenv("STRAPI_API_URL", "http://localhost:1337")
+STRAPI_API_URL = os.getenv("STRAPI_API_URL", "http://localhost:1337").rstrip("/")
 STRAPI_API_TOKEN = os.getenv("STRAPI_API_TOKEN", "")
 
 HEADERS = {
@@ -81,7 +81,7 @@ def generate_image(prompt, filename):
                 f.write(response.content)
             return True
         else:
-            print("❌ Görsel indirilemedi.")
+            print("❌ Görsel indirilemedi (Servis meşgul olabilir).")
             return False
     except Exception as e:
         print(f"❌ Beklenmeyen hata (Görsel Üretimi): {e}")
@@ -113,7 +113,7 @@ def create_category(category_data):
         if res.status_code in [200, 201]:
             data = res.json()
             
-            # Strapi v5 (documentId) vs Strapi v4 (id) kontrolü
+            # Strapi v5 (documentId) vs Strapi v4 (id)
             tr_document_id = data.get("data", {}).get("documentId")
             tr_id = data.get("data", {}).get("id") if isinstance(data.get("data"), dict) and "id" in data.get("data") else data.get("id")
             
@@ -124,25 +124,28 @@ def create_category(category_data):
                 en_name = translator.translate(category_data["name"])
                 en_desc = translator.translate(category_data["description"])
                 
-                # Strapi v5'te localization verisi "data" objesi içine sarılmalıdır
+                # Strapi v5 Localization Mantığı
                 if tr_document_id:
                     loc_payload = {
                         "data": {
+                            "documentId": tr_document_id, # Aynı documentId ile yeni locale oluşturma
                             "name": en_name,
                             "description": en_desc,
                             "locale": "en"
                         }
                     }
+                    loc_res = requests.post(f"{STRAPI_API_URL}/api/categories", headers=HEADERS, json=loc_payload)
                 else:
+                    # Strapi v4 Fallback
                     loc_payload = {
                         "name": en_name,
                         "description": en_desc,
                         "locale": "en"
                     }
+                    loc_res = requests.post(f"{STRAPI_API_URL}/api/categories/{tr_id}/localizations", headers=HEADERS, json=loc_payload)
                 
-                loc_res = requests.post(f"{STRAPI_API_URL}/api/categories/{identifier}/localizations", headers=HEADERS, json=loc_payload)
                 if loc_res.status_code in [200, 201]:
-                    print(f"✅ Kategori çok dilli (tek post) olarak eklendi: {category_data['name']}")
+                    print(f"✅ Kategori çok dilli olarak eklendi: {category_data['name']}")
                 else:
                     print(f"⚠️ Kategori TR eklendi ama EN çevirisi eklenemedi: {loc_res.text}")
                 
@@ -196,6 +199,7 @@ def create_system(system_data, category_id):
                 if tr_document_id:
                     loc_payload = {
                         "data": {
+                            "documentId": tr_document_id,
                             "name": en_name,
                             "hardware_info": en_hardware,
                             "details": en_details,
@@ -205,6 +209,7 @@ def create_system(system_data, category_id):
                             "locale": "en"
                         }
                     }
+                    loc_res = requests.post(f"{STRAPI_API_URL}/api/systems", headers=HEADERS, json=loc_payload)
                 else:
                     loc_payload = {
                         "name": en_name,
@@ -215,10 +220,10 @@ def create_system(system_data, category_id):
                         "image": image_id,
                         "locale": "en"
                     }
-                
-                loc_res = requests.post(f"{STRAPI_API_URL}/api/systems/{identifier}/localizations", headers=HEADERS, json=loc_payload)
+                    loc_res = requests.post(f"{STRAPI_API_URL}/api/systems/{tr_id}/localizations", headers=HEADERS, json=loc_payload)
+                    
                 if loc_res.status_code in [200, 201]:
-                    print(f"✅ Sistem çok dilli (tek post) olarak eklendi: {system_data['name']}")
+                    print(f"✅ Sistem çok dilli olarak eklendi: {system_data['name']}")
                 else:
                     print(f"⚠️ Sistem TR eklendi ama EN çevirisi eklenemedi: {loc_res.text}")
         else:
@@ -241,7 +246,6 @@ def run():
         attrs = cat.get("attributes", cat)
         name = attrs.get("name") if attrs else cat.get("name")
         if name:
-            # Strapi v5 documentId vs Strapi v4 id
             category_map[name] = cat.get("documentId", cat.get("id"))
 
     for mock_cat in MOCK_CATEGORIES:
