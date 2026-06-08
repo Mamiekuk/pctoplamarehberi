@@ -31,6 +31,14 @@
         }
       }
     },
+    "details": {
+      "type": "text",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
     "price": {
       "type": "decimal",
       "pluginOptions": {
