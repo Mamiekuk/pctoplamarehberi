@@ -504,12 +504,6 @@ export interface ApiSystemSystem extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    details: Schema.Attribute.Blocks &
-      Schema.Attribute.SetPluginOptions<{
-        i18n: {
-          localized: true;
-        };
-      }>;
     hardware_info: Schema.Attribute.String &
       Schema.Attribute.SetPluginOptions<{
         i18n: {
