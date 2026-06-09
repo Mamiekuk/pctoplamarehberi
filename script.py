@@ -75,6 +75,17 @@ def groq_enhance_prompt(name, hardware_info, category):
     except Exception as e:
         return f"A high quality studio shot of a {category} computer named {name}, highly detailed."
 
+def get_existing_names():
+    url = f"{STRAPI_API_URL}/api/systems?fields=name&locale=tr-TR&pagination[pageSize]=100"
+    try:
+        res = requests.get(url, headers=HEADERS)
+        if res.status_code == 200:
+            data = res.json().get("data", [])
+            return [sys.get("name") for sys in data if sys.get("name")]
+    except:
+        pass
+    return []
+
 def groq_generate_systems(category_name, count):
     if not groq_client:
         return []
@@ -83,10 +94,14 @@ def groq_generate_systems(category_name, count):
     themes = ["Uzay ve Galaksi", "Mitolojik Tanrılar", "Siberpunk & Neon", "Yırtıcı Hayvanlar", "Askeri ve Taktiksel", "Otomobil Yarışları", "Samuray ve Ninja", "Doğa ve Elementler", "Karanlık ve Gotik", "Minimalist ve Modern"]
     selected_theme = random.choice(themes)
     
+    existing_names = get_existing_names()
+    avoid_names_str = f"CRITICAL: Do NOT use any of these existing names: {', '.join(existing_names)}." if existing_names else "Ensure each name is completely unique and never used before."
+    
     try:
         prompt_instruction = f"""
         You are an expert PC builder. Generate {count} realistic, modern PC builds for the category: "{category_name}".
         CRITICAL: The naming and aesthetic concept of these PCs MUST be inspired by the theme: '{selected_theme}'.
+        {avoid_names_str}
         Provide the output ONLY as a valid JSON array of objects.
         Each object MUST have the following keys:
         - name: A cool, highly creative, and unique name for the PC based on the theme '{selected_theme}' (in Turkish, e.g. 'Galaktik Fırtına', 'Neon Samuray'). DO NOT use boring generic names like 'Oyun Canavarı' or 'Ofis Pro'.
