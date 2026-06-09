@@ -170,9 +170,15 @@ else:
             img_obj = img_data.get("data")
             if img_obj:
                 img_attrs = img_obj.get("attributes", img_obj)
-                image_url = STRAPI_API_URL + img_attrs.get("url", "")
-            elif img_data.get("url"):
-                image_url = STRAPI_API_URL + img_data.get("url")
+                raw_url = img_attrs.get("url", "")
+            else:
+                raw_url = img_data.get("url", "")
+                
+            if raw_url:
+                if raw_url.startswith("http"):
+                    image_url = raw_url
+                else:
+                    image_url = STRAPI_API_URL + raw_url
 
         with st.container():
             st.markdown(f'<div class="system-card">', unsafe_allow_html=True)
